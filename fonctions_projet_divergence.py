@@ -1,15 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
-Calcul de la divergence bidimensionelle
+Fonctions stage
 """
-DataFolder="C:/Users/Julie_000/Desktop/Stage/Data" 
+DataFolder="C:/Users/Julie_000/Desktop/Stage/Python" 
 
 # Importation des librairies
 from mat4py import loadmat #pour charger des .mat
@@ -86,7 +81,7 @@ def good_shape(a):
     return("les dimensions des array ne conviennent pas pour l'usage de good_shape, ou problème avec n")
  
     
-def divergence2D(a,b):
+def somme(a,b):
     "juste somme d'array"
     if np.shape(a)==np.shape(b):
         return(a+b)
@@ -95,9 +90,8 @@ def divergence2D(a,b):
 
 
 
-
-def masque(a):
-    "Enlève les données sous le nageur"
+def masque_carre(a):
+    "Enlève les données sous le nageur (forme de carré)"
     b=a
     shape=np.shape(b)
     if np.size(shape)==2:#cas la plupart du temps
@@ -108,6 +102,29 @@ def masque(a):
         for i in range(l):
             b[i,27:33,27:33]=np.zeros((6,6))
     return(b)
+
+def masque(a,x,y,dx,dy):
+    "applique un masque rond"
+    b=a
+    r=np.sqrt(dx**2+dy**2)
+    shape=np.shape(b)
+    if np.size(shape)==2:
+        if shape[0]==59:
+            return(np.where(r>6,b,0))
+        elif shape[0]==60:
+            r=np.sqrt(x**2+y**2)
+            return(np.where(r>6,b,0))
+    elif np.size(shape)==3:#pour gérer cas divergence/filtrage/masque
+        l=shape[0]
+        if shape[1]==59:
+            for i in range(l):
+                b[i,:,:]=np.where(r>6,b[i,:,:],0)
+            return(b)
+        elif shape[1]==60:
+            r=np.sqrt(x**2+y**2)
+            for i in range(l):
+                b[i,:,:]=np.where(r>6,b[i,:,:],0)
+            return(b)
 
 def masque_puis_filtregauss(a,sigma):
     "Applique le masque puis le filtre gaussien et s'adapte à la taille de sigma"
@@ -173,6 +190,39 @@ def somme3D(a,b):
     else:
         return("a et b n'ont pas la même shape")
  
+def divergence2D_gauss(u,v,x,y,sigma):
+    "Applique le programme de divergence2D avec filtre gaussien sur la vitesse"
+
+    #Filtrage
+    u_filtre=gaussian_filter(u,sigma)
+    v_filtre=gaussian_filter(v,sigma)
+    #dérivation
+    du_filtre,dv_filtre=deriv(u_filtre,x,1),deriv(v_filtre,y,0)
+    dx=abcisse(x,1)
+    dy=abcisse(y,0)
+    #shape
+    du_filtre,dv_filtre=good_shape(du_filtre),good_shape(dv_filtre)
+    dx,dy=good_shape(dx),good_shape(dy)
+    #somme
+    div = somme(du_filtre,dv_filtre)
+    #masque
+    div_masque=masque(div,x,y,dx,dy)
+    return(div_masque,dx,dy)
+
+
+def divergence2D(u,v,x,y):
+    "Applique le programme de divergence2D sans filtre"
+    #Dérivation
+    du,dv=deriv(u,x,1),deriv(v,y,0)
+    dx,dy=abcisse(x,1),abcisse(y,0)
+    #Remise à la bonne taille
+    du,dv=good_shape(du),good_shape(dv)
+    dx,dy=good_shape(dx),good_shape(dy)
+    #somme des tableaux
+    div = somme(du,dv)
+    #masque
+    div_masque=masque(div,x,y,dx,dy)
+    return(div_masque,dx,dy)
     
 #Fonctions de plot
         
@@ -210,3 +260,4 @@ def plot_superposition (div0,div1,title,m):
     fig.tight_layout(pad=3.2)
     fig.suptitle(title,fontsize=16)
     plt.show()
+

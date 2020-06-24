@@ -72,7 +72,6 @@ def abcisse(x,axis):
 def good_shape(a):
     "remise à la bonne shape des tableaux a et b pour pouvoir ensuite les sommer"
     "Ne fonctionne que dans ce cas précis avec des tableaux (n,n-1) et (n-1,n) et donne un tableau (n-1,n-1)"
-    #donc on perd des données, je ne sais pas comment faire autrement...
     n=np.max(np.shape(a))
     if np.shape(a)[0]==n:
         return(a[:-1,:])

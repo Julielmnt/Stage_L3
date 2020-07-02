@@ -15,7 +15,7 @@ from pathlib import Path # Pour rendre les Path compatibles entre Mac et Windows
 from matplotlib import rc #Les trois prochaines lignes pour que Ã§a ressemble Ã  latex
 rc('font', size=16)
 rc('text', usetex=True)
-
+from numpy.linalg import pinv as nppinv
 import matplotlib.cm as cm #colormaps
 from matplotlib.colors import Normalize #Pour l'utilisation des couleurs dans quiver
 
@@ -222,7 +222,70 @@ def divergence2D(u,v,x,y):
     #masque
     div_masque=masque(div,x,y,dx,dy)
     return(div_masque,dx,dy)
+
+def divergence2D_gauss2(u,v,x,y,sigma):
+    "Applique le programme de divergence2D avec filtre gaussien sur la vitesse"
+
+    #Filtrage
+    u_filtre=gaussian_filter(gaussian_filter(u,sigma),sigma)
+    v_filtre=gaussian_filter(gaussian_filter(v,sigma),sigma)
+    #dérivation
+    du_filtre,dv_filtre=deriv(u_filtre,x,1),deriv(v_filtre,y,0)
+    dx,dy=abcisse(x,1),abcisse(y,0)
+    #shape
+    du_filtre,dv_filtre=good_shape(du_filtre),good_shape(dv_filtre)
+    dx,dy=good_shape(dx),good_shape(dy)
+    #somme
+    div = somme(du_filtre,dv_filtre)
+    #masque
+    div_masque=masque(div,x,y,dx,dy)
+    return(div_masque,dx,dy)
+
+def nb_plan(prof):
+    "Détermine le nombre de plan pour une profondeur donnée"
+    if prof==5:
+        return(16)
+    if prof==10:
+        return(32)
+    if prof==15:
+        return(49)
+    else:
+        return("prof n'a pas une valeur acceptable")
     
+def donnees2(n,piv):
+    "Charge les données pour la profondeur donnée"
+    u=np.zeros((n,60,60))
+    v=np.zeros((n,60,60))
+    x=np.zeros((n,60,60))
+    y=np.zeros((n,60,60))
+    z=np.zeros((n))
+
+    for plan in range(n): 
+            u[plan]=np.array(piv[plan]['u'])
+            v[plan]=np.array(piv[plan]['v'])
+            x[plan]=np.array(piv[plan]['x'])
+            y[plan]=np.array(piv[plan]['y'])
+            z[plan]=np.array(piv[plan]['prof'])
+    return(u,v,x,y,z)
+
+def methode_Galerkine(u,v,x,y,z,P,m,h):
+    "Applique la méthode Galerkine"
+    #divergence bidimensionelle
+    div_2D=np.zeros((P,59,59))
+    dx=np.zeros((P,59,59))
+    dy=np.zeros((P,59,59))
+    for plan in range(P):
+        div_2D[plan],dx[plan],dy[plan]=divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
+    #Matrice pinv
+    pinv=nppinv(np.transpose(np.array([n*np.pi/h*np.cos(n*np.pi/h*z) for n in range(1,m+1)])))
+    #Calcul des coefficients
+    div_2D=np.reshape(div_2D,(P,59*59))
+    a=np.matmul(pinv,div_2D)
+    #calcul de vz
+    sin=np.transpose(np.array([np.sin(m*np.pi*z/h) for m in range(1,m+1)]))
+    vz=np.matmul(sin,a)
+    vz=np.reshape(vz,(P,59,59))
+    return(vz)
 #Fonctions de plot
         
 def plot_superposition (div0,div1,title,m):

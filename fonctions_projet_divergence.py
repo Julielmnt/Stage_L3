@@ -15,7 +15,7 @@ from pathlib import Path # Pour rendre les Path compatibles entre Mac et Windows
 from matplotlib import rc #Les trois prochaines lignes pour que Ã§a ressemble Ã  latex
 rc('font', size=16)
 rc('text', usetex=True)
-from numpy.linalg import pinv as nppinv
+
 import matplotlib.cm as cm #colormaps
 from matplotlib.colors import Normalize #Pour l'utilisation des couleurs dans quiver
 
@@ -104,7 +104,7 @@ def masque_carre(a):
 
 def masque(a,x,y,dx,dy):
     "applique un masque rond"
-    b=a
+    b=np.copy(a)
     r=np.sqrt(dx**2+dy**2)
     shape=np.shape(b)
     if np.size(shape)==2:
@@ -117,12 +117,12 @@ def masque(a,x,y,dx,dy):
         l=shape[0]
         if shape[1]==59:
             for i in range(l):
-                b[i,:,:]=np.where(r>6,b[i,:,:],0)
+                b[i,:,:]=np.where(r[i,:,:]>6,b[i,:,:],0)
             return(b)
         elif shape[1]==60:
             r=np.sqrt(x**2+y**2)
             for i in range(l):
-                b[i,:,:]=np.where(r>6,b[i,:,:],0)
+                b[i,:,:]=np.where(r[i,:,:]>6,b[i,:,:],0)
             return(b)
 
 def masque_puis_filtregauss(a,sigma):
@@ -238,8 +238,27 @@ def divergence2D_gauss2(u,v,x,y,sigma):
     #somme
     div = somme(du_filtre,dv_filtre)
     #masque
-    div_masque=masque(div,x,y,dx,dy)
+    div_masque=masque(div)
     return(div_masque,dx,dy)
+
+def methode_Galerkine(u,v,x,y,z,P,m,h):
+    "Applique la méthode Galerkine"
+    #divergence bidimensionelle
+    div_2D=np.zeros((P,59,59))
+    dx=np.zeros((P,59,59))
+    dy=np.zeros((P,59,59))
+    for plan in range(P):
+        div_2D[plan],dx[plan],dy[plan]=fpd.divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
+    #Matrice pinv
+    pinv=nppinv(np.transpose(np.array([n*np.pi/h*np.cos(n*np.pi/h*z) for n in range(1,m+1)])))
+    #Calcul des coefficients
+    div_2D=np.reshape(div_2D,(P,59*59))
+    a=np.matmul(pinv,div_2D)
+    #calcul de vz
+    sin=np.transpose(np.array([np.sin(m*np.pi*z/h) for m in range(1,m+1)]))
+    vz=np.matmul(sin,a)
+    vz=np.reshape(vz,(P,59,59))
+    return(vz)
 
 def nb_plan(prof):
     "Détermine le nombre de plan pour une profondeur donnée"
@@ -267,25 +286,7 @@ def donnees2(n,piv):
             y[plan]=np.array(piv[plan]['y'])
             z[plan]=np.array(piv[plan]['prof'])
     return(u,v,x,y,z)
-
-def methode_Galerkine(u,v,x,y,z,P,m,h):
-    "Applique la méthode Galerkine"
-    #divergence bidimensionelle
-    div_2D=np.zeros((P,59,59))
-    dx=np.zeros((P,59,59))
-    dy=np.zeros((P,59,59))
-    for plan in range(P):
-        div_2D[plan],dx[plan],dy[plan]=divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
-    #Matrice pinv
-    pinv=nppinv(np.transpose(np.array([n*np.pi/h*np.cos(n*np.pi/h*z) for n in range(1,m+1)])))
-    #Calcul des coefficients
-    div_2D=np.reshape(div_2D,(P,59*59))
-    a=np.matmul(pinv,div_2D)
-    #calcul de vz
-    sin=np.transpose(np.array([np.sin(m*np.pi*z/h) for m in range(1,m+1)]))
-    vz=np.matmul(sin,a)
-    vz=np.reshape(vz,(P,59,59))
-    return(vz)
+    
 #Fonctions de plot
         
 def plot_superposition (div0,div1,title,m):

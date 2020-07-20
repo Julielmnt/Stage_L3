@@ -22,7 +22,7 @@ from matplotlib.colors import Normalize #Pour l'utilisation des couleurs dans qu
 import scipy as sc #pour l'analyse
 from matplotlib.ticker import MaxNLocator #pour les courbes de niveau
 from scipy.ndimage import gaussian_filter #Filtrage gaussien
-
+from numpy.linalg import pinv as nppinv
 
 # Definition des fonctions
 def PIV(prof,manips): 
@@ -248,7 +248,7 @@ def methode_Galerkine(u,v,x,y,z,P,m,h):
     dx=np.zeros((P,59,59))
     dy=np.zeros((P,59,59))
     for plan in range(P):
-        div_2D[plan],dx[plan],dy[plan]=fpd.divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
+        div_2D[plan],dx[plan],dy[plan]=divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
     #Matrice pinv
     pinv=nppinv(np.transpose(np.array([n*np.pi/h*np.cos(n*np.pi/h*z) for n in range(1,m+1)])))
     #Calcul des coefficients

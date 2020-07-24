@@ -94,12 +94,12 @@ def masque_carre(a):
     b=a
     shape=np.shape(b)
     if np.size(shape)==2:#cas la plupart du temps
-        b[27:33,27:33]=np.zeros((6,6))
+        b[57:63,57:63]=np.zeros((6,6))
         
     elif np.size(shape)==3:#pour gérer cas divergence/filtrage/masque
         l=shape[0]
         for i in range(l):
-            b[i,27:33,27:33]=np.zeros((6,6))
+            b[i,57:63,57:63]=np.zeros((6,6))
     return(b)
 
 def masque(a,x,y,dx,dy):
@@ -108,18 +108,18 @@ def masque(a,x,y,dx,dy):
     r=np.sqrt(dx**2+dy**2)
     shape=np.shape(b)
     if np.size(shape)==2:
-        if shape[0]==59:
+        if shape[0]==119:
             return(np.where(r>6,b,0))
-        elif shape[0]==60:
+        elif shape[0]==120:
             r=np.sqrt(x**2+y**2)
             return(np.where(r>6,b,0))
     elif np.size(shape)==3:#pour gérer cas divergence/filtrage/masque
         l=shape[0]
-        if shape[1]==59:
+        if shape[1]==119:
             for i in range(l):
                 b[i,:,:]=np.where(r[i,:,:]>6,b[i,:,:],0)
             return(b)
-        elif shape[1]==60:
+        elif shape[1]==120:
             r=np.sqrt(x**2+y**2)
             for i in range(l):
                 b[i,:,:]=np.where(r[i,:,:]>6,b[i,:,:],0)
@@ -244,20 +244,20 @@ def divergence2D_gauss2(u,v,x,y,sigma):
 def methode_Galerkine(u,v,x,y,z,P,m,h):
     "Applique la méthode Galerkine"
     #divergence bidimensionelle
-    div_2D=np.zeros((P,59,59))
-    dx=np.zeros((P,59,59))
-    dy=np.zeros((P,59,59))
+    div_2D=np.zeros((P,119,119))
+    dx=np.zeros((P,119,119))
+    dy=np.zeros((P,119,119))
     for plan in range(P):
         div_2D[plan],dx[plan],dy[plan]=divergence2D_gauss(u[plan],v[plan],x[plan],y[plan],2)
     #Matrice pinv
     pinv=nppinv(np.transpose(np.array([n*np.pi/h*np.cos(n*np.pi/h*z) for n in range(1,m+1)])))
     #Calcul des coefficients
-    div_2D=np.reshape(div_2D,(P,59*59))
+    div_2D=np.reshape(div_2D,(P,119*119))
     a=np.matmul(pinv,div_2D)
     #calcul de vz
     sin=np.transpose(np.array([np.sin(m*np.pi*z/h) for m in range(1,m+1)]))
     vz=np.matmul(sin,a)
-    vz=np.reshape(vz,(P,59,59))
+    vz=np.reshape(vz,(P,119,119))
     return(vz)
 
 def nb_plan(prof):
@@ -273,10 +273,10 @@ def nb_plan(prof):
     
 def donnees2(n,piv):
     "Charge les données pour la profondeur donnée"
-    u=np.zeros((n,60,60))
-    v=np.zeros((n,60,60))
-    x=np.zeros((n,60,60))
-    y=np.zeros((n,60,60))
+    u=np.zeros((n,120,120))
+    v=np.zeros((n,120,120))
+    x=np.zeros((n,120,120))
+    y=np.zeros((n,120,120))
     z=np.zeros((n))
 
     for plan in range(n): 
